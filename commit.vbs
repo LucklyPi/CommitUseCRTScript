@@ -1,8 +1,10 @@
 # $language = "VBScript"
 # $interface = "1.0"
-' Version		1.0
+' Version		1.1
 ' Auther		wangyw@tcl.com
-' Date			2015/10/30
+' Date			2015/11/01
+
+
 
 '系统环境配置
 TortoiseSVNPath  = "C:\Program Files\TortoiseSVN\"    'TortoiseSVN安装目录
