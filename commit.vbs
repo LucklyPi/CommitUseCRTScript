@@ -1,8 +1,8 @@
 # $language = "VBScript"
 # $interface = "1.0"
-' Version		1.1
+' Version		1.2
 ' Auther		wangyw@tcl.com
-' Date			2015/11/01
+' Date			2015/11/02
 
 
 
@@ -18,8 +18,9 @@ js_switch		 = 1	'.js文件提交开关
 html_switch		 = 1 	'.html文件提交开关
 h_switch		 = 1 	'.h文件提交开关
 c_switch		 = 1 	'.c文件提交开关
+cmake_switch	 = 0    '.cmake文件提交开关
 
-modify_in_days	 = 5	'在最近多少天内修改过的文件才会提交
+modify_in_days	 = 5	'在最近多少天内修改过的文件才会提交,0代表无限大
 
 
 
@@ -30,17 +31,19 @@ Function getpathname(filename)
 	
 	Dim startindex, endindex
 
-	If cpp_switch And (InStr(filename,".cpp") <> 0) Then
+	If cpp_switch And (InStr(filename,".cpp ") <> 0) Then
 		endindex = InStr(filename,".cpp") + 4
-	ElseIF css_switch And (InStr(filename,".css") <> 0) Then
+	ElseIF css_switch And (InStr(filename,".css ") <> 0) Then
 		endindex = InStr(filename,".css") + 4
-	ElseIF js_switch And (InStr(filename,".js") <> 0) Then
+	ElseIF cmake_switch And (InStr(filename,".cmake ") <> 0) Then
+		endindex = InStr(filename,".cmake") + 6
+	ElseIF js_switch And (InStr(filename,".js ") <> 0) Then
 		endindex = InStr(filename,".js") + 3
-	ElseIF html_switch And (InStr(filename,".html") <> 0) Then
+	ElseIF html_switch And (InStr(filename,".html ") <> 0) Then
 		endindex = InStr(filename,".html") + 5
-	ElseIF h_switch And (InStr(filename,".h") <> 0) Then
+	ElseIF h_switch And (InStr(filename,".h ") <> 0) Then
 		endindex = InStr(filename,".h") + 2
-	ElseIF c_switch And (InStr(filename,".c") <> 0) Then
+	ElseIF c_switch And (InStr(filename,".c ") <> 0) Then
 		endindex = InStr(filename,".c") + 2
 	Else
 		endindex = 0
@@ -112,7 +115,7 @@ Sub Main
 		For index = 0 To cfilecnt-1
 			Set fn=fso.GetFile(cfilelist(index))
 			modifyDate = fn.DateLastModified
-			If DateDiff("d", modifyDate, nowDate) <= modify_in_days Then
+			If (modify_in_days = 0) Or (DateDiff("d", modifyDate, nowDate) <= modify_in_days) Then
 				cmd = cmd & cfilelist(index)
 				If index <> cfilecnt-1 Then
 				cmd = cmd & "*"
