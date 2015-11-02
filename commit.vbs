@@ -8,8 +8,8 @@
 
 '系统环境配置
 TortoiseSVNPath  = "C:\Program Files\TortoiseSVN\"    'TortoiseSVN安装目录
-WsitaWorkPath    = "Z:\sita\"						  'windows下工程目录
-LsitaWorkPath    = "~/samba/sita/"					  'Linux下工程目录
+WsitaWorkPath    = "Z:\sita\"						  'windows下工程目录，必须是tbrowser所在的目录
+LsitaWorkPath    = "~/samba/sita/"					  'Linux下工程目录，必须是tbrowser所在的目录
 
 '提交文件配置
 cpp_switch		 = 1 	'.cpp文件提交开关
@@ -20,7 +20,7 @@ h_switch		 = 1 	'.h文件提交开关
 c_switch		 = 1 	'.c文件提交开关
 cmake_switch	 = 0    '.cmake文件提交开关
 
-modify_in_days	 = 5	'在最近多少天内修改过的文件才会提交,0代表无限大
+modify_in_days	 = 0	'在最近多少天内修改过的文件才会提交,0代表无限大
 
 
 
