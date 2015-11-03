@@ -1,31 +1,49 @@
 # $language = "VBScript"
 # $interface = "1.0"
-' Version		1.2
+' Version		1.3
 ' Auther		wangyw@tcl.com
-' Date			2015/11/02
+' Date			2015/11/03
 
+Set objFSO = CreateObject("Scripting.FileSystemObject")
+Dim TortoiseSVNPath  
+Dim WsitaWorkPath    
+Dim LsitaWorkPath    
+Dim cpp_switch		 
+Dim css_switch		 
+Dim js_switch		 
+Dim html_switch		 
+Dim h_switch		 
+Dim c_switch		 
+Dim cmake_switch	 
+Dim modify_in_days
 
-
-'系统环境配置
-TortoiseSVNPath  = "C:\Program Files\TortoiseSVN\"    'TortoiseSVN安装目录
-WsitaWorkPath    = "Z:\sita\"						  'windows下工程目录，必须是tbrowser所在的目录
-LsitaWorkPath    = "~/samba/sita/"					  'Linux下工程目录，必须是tbrowser所在的目录
-
-'提交文件配置
-cpp_switch		 = 1 	'.cpp文件提交开关
-css_switch		 = 1 	'.css文件提交开关
-js_switch		 = 1	'.js文件提交开关
-html_switch		 = 1 	'.html文件提交开关
-h_switch		 = 1 	'.h文件提交开关
-c_switch		 = 1 	'.c文件提交开关
-cmake_switch	 = 0    '.cmake文件提交开关
-
-modify_in_days	 = 0	'在最近多少天内修改过的文件才会提交,0代表无限大
-
-
-
-Dim cfilecnt
-Dim cfilelist(1000)
+Function GetProfile(strFileName, strSection, strName)     
+	Dim st, idx    
+	st = False    
+	Const ForReading = 1     
+	Set eXmlFile = objFSO.OpenTextFile(strFileName, ForReading)  
+	 
+	Do While not eXmlFile.AtEndOfStream     
+		eStrLine = eXmlFile.Readline 
+		If Trim(eStrLine) <> "" Then  
+			If Left(Trim(eStrLine), 1) = "[" And Trim(Mid(Trim(eStrLine), 2, Len(Trim(eStrLine)) - 2)) = strSection Then     
+				st = True     
+			End If  
+			If st = True Then
+				tmp = split(Trim(eStrLine), "=")    
+				If Trim(tmp(0)) = strName Then    
+					GetProfile = Trim(tmp(1))   
+					eXmlFile.Close     
+					Set eXmlFile = Nothing     
+					Exit Function  
+				End If
+			End If
+		End If       
+	Loop   
+	eXmlFile.Close     
+	Set eXmlFile = Nothing 
+	GetProfile = ""
+End Function  
 
 Function getpathname(filename)
 	
@@ -60,9 +78,11 @@ End Function
 
 
 Function getfilelist
-	Dim filecnt
-	Dim filelist(1000)
-	
+	Dim filecnt, filelist(1000)
+	Dim cfilecnt, cfilelist(1000)
+	Dim index, cfilebuf
+	Dim isExists, modifyDate, nowDate
+
 	filecnt = 0
 	Do 
 		filelist(filecnt) = crt.screen.Get(crt.screen.CurrentRow - 1 - filecnt, 0, crt.screen.CurrentRow - 1 - filecnt, crt.screen.Columns)
@@ -70,61 +90,92 @@ Function getfilelist
 	Loop While InStr(filelist(filecnt-1), "$") = 0
 	filecnt = filecnt - 1
 	
-	Dim index
-	Dim cfilebuf
 	cfilecnt = 0
+	nowDate = now()
 	For index = 0 To filecnt-1
+		'判断是否符合提交的文件类型
 		cfilebuf = getpathname(filelist(index))
 		If StrComp(cfilebuf, "NOT C FILE") <> 0 Then
-			cfilelist(cfilecnt) = cfilebuf
-			cfilecnt = cfilecnt + 1
+			cfilebuf = Replace (cfilebuf, "/", "\")
+			cfilebuf = WsitaWorkPath & cfilebuf
+			isExists = objFSO.fileExists(cfilebuf)
+			If isExists Then
+				'判断是否是过期的文件
+				Set fn = objFSO.GetFile(cfilebuf)
+				modifyDate = fn.DateLastModified
+				If (modify_in_days = 0) Or (DateDiff("d", modifyDate, nowDate) <= modify_in_days) Then
+					cfilelist(cfilecnt) = cfilebuf
+					cfilecnt = cfilecnt + 1
+				End If
+				Set fn = Nothing
+			End If
 		End If
 	Next
 	
-	For index = 0 To cfilecnt-1
-		cfilelist(index) = Replace (cfilelist(index), "/", "\")
-		cfilelist(index) = WsitaWorkPath & cfilelist(index)
-	Next
-	
-	
+	If cfilecnt = 0 Then
+		getfilelist = "NO FILE"
+	Else
+		getfilelist = """"
+		For index = 0 To cfilecnt-1
+			getfilelist = getfilelist & cfilelist(index)
+			If index <> cfilecnt-1 Then
+			getfilelist = getfilelist & "*"
+			End if
+		Next
+		getfilelist = getfilelist & """"
+	End If	
 End Function
 
+Function getConfig(filename)
+	
+	Dim curPath, isExists
+	curPath = objFSO.GetFolder(".").Path
+	curPath = curPath & "\" & filename
+	isExists = objFSO.fileExists(curPath)
+	If Not isExists Then
+		MsgBox "No find config file"
+		getConfig = 0
+		Exit Function
+	End If
+	
+	TortoiseSVNPath = GetProfile(curPath, "system", "TortoiseSVNPath")
+	WsitaWorkPath = GetProfile(curPath, "system", "WsitaWorkPath")
+	LsitaWorkPath = GetProfile(curPath, "system", "LsitaWorkPath")
+	cpp_switch =  GetProfile(curPath, "fileswitch", "cpp_switch")
+	css_switch = GetProfile(curPath, "fileswitch", "css_switch")	 
+	js_switch  = GetProfile(curPath, "fileswitch", "js_switch")
+	html_switch = GetProfile(curPath, "fileswitch", "html_switch")
+	h_switch = GetProfile(curPath, "fileswitch", "h_switch")
+	c_switch = GetProfile(curPath, "fileswitch", "c_switch")
+	cmake_switch = GetProfile(curPath, "fileswitch", "cmake_switch")
+	modify_in_days = GetProfile(curPath, "modifytime", "modify_in_days")
+	
+	getConfig = 1
+End Function
 
-Sub Main	
+Sub Main
+	If getConfig("config.ini") = 0 Then
+		Exit Sub
+	End If
+	
 	crt.screen.Send "cd " & LsitaWorkPath & chr(13)
 	crt.screen.WaitForString  "$"
 	crt.screen.Send "svn st -q" & chr(13)
 	crt.screen.WaitForString  "$"
-	getfilelist
-
+	
+	Dim commitFilePath
 	Dim cmd
-	Dim nowDate
-	Dim modifyDate
-	Set fso=createobject("Scripting.FileSystemObject")
-	nowDate = now()
-	If cfilecnt = 0 Then
+	commitFilePath = getfilelist()
+	If commitFilePath = "NO FILE" Then
 		MsgBox "no file need commit"
 	Else
 		cmd = """"
 		cmd = cmd & TortoiseSVNPath
 		cmd = cmd & "bin\TortoiseProc.exe"
 		cmd = cmd & """"
-		cmd = cmd & " /command:commit /path:"
-		cmd = cmd & """"
-		Dim index
-		For index = 0 To cfilecnt-1
-			Set fn=fso.GetFile(cfilelist(index))
-			modifyDate = fn.DateLastModified
-			If (modify_in_days = 0) Or (DateDiff("d", modifyDate, nowDate) <= modify_in_days) Then
-				cmd = cmd & cfilelist(index)
-				If index <> cfilecnt-1 Then
-				cmd = cmd & "*"
-				End if
-			End If
-		Next
-		cmd = cmd & """"
+		cmd = cmd & " /command:commit /path:" &commitFilePath
 		cmd = cmd & " /closeonend"
 		set a=createobject("wscript.shell")
-	a.run cmd
+		a.run cmd
 	End IF
 End Sub
