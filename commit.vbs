@@ -93,14 +93,12 @@ Function getfilelist
 	cfilecnt = 0
 	nowDate = now()
 	For index = 0 To filecnt-1
-		'判断是否符合提交的文件类型
 		cfilebuf = getpathname(filelist(index))
 		If StrComp(cfilebuf, "NOT C FILE") <> 0 Then
 			cfilebuf = Replace (cfilebuf, "/", "\")
 			cfilebuf = WsitaWorkPath & cfilebuf
 			isExists = objFSO.fileExists(cfilebuf)
 			If isExists Then
-				'判断是否是过期的文件
 				Set fn = objFSO.GetFile(cfilebuf)
 				modifyDate = fn.DateLastModified
 				If (modify_in_days = 0) Or (DateDiff("d", modifyDate, nowDate) <= modify_in_days) Then
