@@ -64,12 +64,11 @@ End Function
 
 
 Function getConfig()
-	Dim curPath
-	Dim configFilePath
 	
 	'获取配置文件路径，实际在crt中执行过程中会出现找不到配置文件的情况，
 	'怀疑是因为objFSO.GetFolder(".").Path有问题，这时重新选择脚本执行即可。
 	'未找到解决的办法，暂时引入环境变量COMMIT_CONFIG_PATH明确指出配置文件路径。
+	Dim configFilePath
 	Set env = CreateObject("WScript.Shell").Environment("user")
 	configFilePath = env("COMMIT_CONFIG_PATH")
 	If Len(configFilePath) = 0 Then
@@ -77,9 +76,9 @@ Function getConfig()
 		configFilePath = env("COMMIT_CONFIG_PATH")
 	End If
 	If Len(configFilePath) = 0 Then
-		curPath = objFSO.GetFolder(".").Path
-		configFilePath = curPath & "\" & "config.ini"
+		configFilePath = objFSO.GetFolder(".").Path
 	End If
+	configFilePath = configFilePath & "\" & "config.ini"
 	If Not objFSO.fileExists(configFilePath) Then
 		MsgBox "No find config file: " & configFilePath
 		getConfig = 0
