@@ -165,7 +165,7 @@ Function getCommitFileList(cmdReturnStr)
 		'前8个字符是svn的状态字符，暂时处理
 		If Len(fileList(i)) > 9 Then
 			linuxFileName = Mid(fileList(i), 9, Len(fileList(i)) - 8)
-			winFileName   = WsitaWorkPath & Replace(LinuxFileName, "/", "\")
+			winFileName   = WsitaWorkPath & "\" & Replace(LinuxFileName, "/", "\")
 			If CheckFile(winFileName) Then
 				commitFileList(commitFileCnt) = winFileName
 				commitFileCnt = commitFileCnt + 1
