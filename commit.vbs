@@ -65,9 +65,6 @@ End Function
 
 Function getConfig()
 	
-	'获取配置文件路径，实际在crt中执行过程中会出现找不到配置文件的情况，
-	'怀疑是因为objFSO.GetFolder(".").Path有问题，这时重新选择脚本执行即可。
-	'未找到解决的办法，暂时引入环境变量COMMIT_CONFIG_PATH明确指出配置文件路径。
 	Dim configFilePath
 	Set env = CreateObject("WScript.Shell").Environment("user")
 	configFilePath = env("COMMIT_CONFIG_PATH")
@@ -85,7 +82,6 @@ Function getConfig()
 		Exit Function
 	End If
 	
-	'获取配置信息
 	TortoiseSVNPath = GetConfigValue(configFilePath, "system", "TortoiseSVNPath")
 	WsitaWorkPath   = GetConfigValue(configFilePath, "system", "WsitaWorkPath") 
 	LsitaWorkPath	= GetConfigValue(configFilePath, "system", "LsitaWorkPath")
@@ -106,14 +102,12 @@ End Function
 Function CheckFile(winFileName)
 	Dim pass
 
-	'提交文件存在检查
 	isExists = objFSO.fileExists(winFileName)
 	If NOT isExists Then
 		CheckFile = 0
 		Exit Function
 	End If
 	
-	'提交类型检查
 	pass = 0
 	tmp = split(winFileName, ".")
 	fileType = "." & tmp(UBound(tmp))
@@ -128,7 +122,6 @@ Function CheckFile(winFileName)
 		Exit Function
 	End If
 	
-	'提交文件黑名单检查
 	For i = 0 To UBound(NotCommitFile)
 		If NotCommitFile(i) <> "" AND InStr(winFileName, NotCommitFile(i)) <> 0 Then
 			pass = 0
@@ -140,7 +133,7 @@ Function CheckFile(winFileName)
 		Exit Function
 	End If
 	
-	'提交文件修改日期限制检查
+
 	nowDate = now()
 	Set fn = objFSO.GetFile(winFileName)
 	modifyDate = fn.DateLastModified
@@ -160,9 +153,7 @@ Function getCommitFileList(cmdReturnStr)
 	Dim commitFileCnt
 	Redim commitFileList(UBound(fileList)+1)
 	commitFileCnt = 0
-	'第一行和最后一行非文件信息，不处理
 	For i = 1 To UBound(fileList)-1
-		'前8个字符是svn的状态字符，暂时处理
 		If Len(fileList(i)) > 9 Then
 			linuxFileName = Mid(fileList(i), 9, Len(fileList(i)) - 8)
 			winFileName   = WsitaWorkPath & "\" & Replace(LinuxFileName, "/", "\")
