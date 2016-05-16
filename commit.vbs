@@ -219,7 +219,23 @@ Function getCommitFileList(cmdReturnStr)
 	End If 
 End Function
 
-
+Function UpdateWorkPath()
+	crt.screen.Send "echo $HOME" & chr(13)
+	homePath = split(crt.Screen.ReadString("$ ", 60), vbCrLf)(1)
+	AbsoluteLWorkPath = Replace(LWorkPath, "~", homePath)
+	
+	crt.screen.Send "pwd" & chr(13)
+	currentPath = split(crt.Screen.ReadString("$ ", 60), vbCrLf)(1) & "/"
+	
+	If InStr(currentPath, AbsoluteLWorkPath) <> 0 Then
+		exPath = Mid(currentPath, Len(AbsoluteLWorkPath)+1, Len(currentPath) - Len(AbsoluteLWorkPath))
+		WWorkPath = WWorkPath & Replace(exPath, "/", "\")
+		LWorkPath = currentPath
+	Else
+		crt.screen.Send "cd " & LWorkPath & chr(13)
+		crt.screen.WaitForString  "$ "
+	End If
+End Function
 
 
 Sub Main
@@ -227,10 +243,9 @@ Sub Main
 		Exit Sub
 	End If
 	crt.screen.IgnoreEscape = False
-	crt.screen.Send "cd " & LWorkPath & chr(13)
-	crt.screen.WaitForString  "$"
+	UpdateWorkPath()
 	crt.screen.Send "svn st -q" & chr(13)
-	receive = crt.Screen.ReadString("$", 60)
+	receive = crt.Screen.ReadString("$ ", 60)
 	
 	Dim commitFileList
 	Dim cmd
