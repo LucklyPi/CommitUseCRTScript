@@ -2,12 +2,12 @@
 # $interface = "1.0"
 ' Version		1.4
 ' Auther		wangyw@tcl.com
-' Date			2016/03/03
+' Date			2016/05/16
 
 Set objFSO = CreateObject("Scripting.FileSystemObject")
 Dim TortoiseSVNPath		'TortoiseSVN安装目录  
-Dim WsitaWorkPath    
-Dim LsitaWorkPath
+Dim WWorkPath    
+Dim LWorkPath
 
 Dim CommitFileType
 Dim NotCommitFile
@@ -62,6 +62,20 @@ Function MySplit(expression, delimiter)
 	MySplit = target_Trim
 End Function
 
+Function FormatPath(path, os)
+    path = Trim(path)
+	If os = "win" Then
+		If Right(path, 1) <> "\" Then
+			path = path & "\"
+		End If
+    Else
+		If Right(path, 1) <> "/" Then
+			path = path & "/"
+		End If
+	End If
+	FormatPath = path
+End Function
+
 
 Function getConfig()
 	
@@ -82,10 +96,10 @@ Function getConfig()
 		Exit Function
 	End If
 	
-	TortoiseSVNPath = GetConfigValue(configFilePath, "system", "TortoiseSVNPath")
-	WsitaWorkPath   = GetConfigValue(configFilePath, "system", "WsitaWorkPath") 
-	LsitaWorkPath	= GetConfigValue(configFilePath, "system", "LsitaWorkPath")
-	If TortoiseSVNPath = "" Or WsitaWorkPath = "" Or LsitaWorkPath = "" Then
+	TortoiseSVNPath = FormatPath(GetConfigValue(configFilePath, "system", "TortoiseSVNPath"), "win")
+	WWorkPath       = FormatPath(GetConfigValue(configFilePath, "system", "WsitaWorkPath"), "win")
+	LWorkPath	    = FormatPath(GetConfigValue(configFilePath, "system", "LsitaWorkPath"), "linux")
+	If TortoiseSVNPath = "" Or WWorkPath = "" Or LWorkPath = "" Then
 		MsgBox "system config ERROR"
 		getConfig = 0
 		Exit Function
@@ -99,55 +113,81 @@ Function getConfig()
 	
 End Function
 
-Function CheckFile(winFileName)
-	Dim pass
-
-	isExists = objFSO.fileExists(winFileName)
-	If NOT isExists Then
-		CheckFile = 0
-		Exit Function
+Function CheckFile(winFileName, fileStatus)
+	Dim existCheck
+	Dim typeCheck
+	Dim blackCheck
+	Dim timeCheck
+	existCheck = 1
+	typeCheck = 1
+	blackCheck = 1
+	timeCheck = 1
+	
+	'set check item
+	If Left(fileStatus, 1) = "D" Then
+		'delete file
+		existCheck = 0
+		timeCheck = 0
+	End If
+	If Mid(fileStatus, 2, 1) = "D" Then
+		'delete dir
+		existCheck = 0
+		typeCheck = 0
+		timeCheck = 0
 	End If
 	
-	pass = 0
-	tmp = split(winFileName, ".")
-	fileType = "." & tmp(UBound(tmp))
-	For i = 0 To UBound(CommitFileType)
-		If fileType = CommitFileType(i) Then
-			pass = 1
-			Exit For
+	'begin file check
+	'file exist check
+	If existCheck <> 0 Then
+		isExists = objFSO.fileExists(winFileName)
+		If NOT isExists Then
+			CheckFile = 0
+			Exit Function
 		End If
-	Next
-	If pass <> 1 Then
-		CheckFile = 0
-		Exit Function
-	End If
+	End if
 	
-	For i = 0 To UBound(NotCommitFile)
-		If NotCommitFile(i) <> "" AND InStr(winFileName, NotCommitFile(i)) <> 0 Then
-			pass = 0
-			Exit For
+	'file type check
+	If typeCheck <> 0 Then
+		pass = 0
+		tmp = split(winFileName, ".")
+		fileType = "." & tmp(UBound(tmp))
+		For i = 0 To UBound(CommitFileType)
+			If fileType = CommitFileType(i) Then
+				pass = 1
+				Exit For
+			End If
+		Next
+		If pass <> 1 Then
+			CheckFile = 0
+			Exit Function
 		End If
-	Next
-	If pass <> 1 Then
-		CheckFile = 0
-		Exit Function
+	End if
+	
+	If blackCheck <> 0 Then
+		For i = 0 To UBound(NotCommitFile)
+			If NotCommitFile(i) <> "" AND InStr(winFileName, NotCommitFile(i)) <> 0 Then
+				CheckFile = 0
+				Exit Function
+			End If
+		Next
 	End If
 	
-
-	nowDate = now()
-	Set fn = objFSO.GetFile(winFileName)
-	modifyDate = fn.DateLastModified
-	Set fn = Nothing
-	If (ModifyInDays = 0) Or (ModifyInDays - DateDiff("d", modifyDate, nowDate) > 0) Then
-		CheckFile = 1
-	Else
-		CheckFile = 0
+	If timeCheck <> 0 And existCheck <> 0 Then
+		nowDate = now()
+		Set fn = objFSO.GetFile(winFileName)
+		modifyDate = fn.DateLastModified
+		Set fn = Nothing
+		If (ModifyInDays = 0) Or (ModifyInDays - DateDiff("d", modifyDate, nowDate) > 0) Then
+		Else
+			CheckFile = 0
+			Exit Function
+		End IF
 	End IF
+	CheckFile = 1
 End Function
 
 
 Function getCommitFileList(cmdReturnStr)
-
 	fileList = split(cmdReturnStr, vbCrLf)
 	Dim commitFileList()
 	Dim commitFileCnt
@@ -155,9 +195,10 @@ Function getCommitFileList(cmdReturnStr)
 	commitFileCnt = 0
 	For i = 1 To UBound(fileList)-1
 		If Len(fileList(i)) > 9 Then
+			fileStatus    = Left(fileList(i), 9)
 			linuxFileName = Mid(fileList(i), 9, Len(fileList(i)) - 8)
-			winFileName   = WsitaWorkPath & "\" & Replace(LinuxFileName, "/", "\")
-			If CheckFile(winFileName) Then
+			winFileName   = WWorkPath & Replace(LinuxFileName, "/", "\")
+			If CheckFile(winFileName, fileStatus) Then
 				commitFileList(commitFileCnt) = winFileName
 				commitFileCnt = commitFileCnt + 1
 			End If
@@ -186,7 +227,7 @@ Sub Main
 		Exit Sub
 	End If
 	crt.screen.IgnoreEscape = False
-	crt.screen.Send "cd " & LsitaWorkPath & chr(13)
+	crt.screen.Send "cd " & LWorkPath & chr(13)
 	crt.screen.WaitForString  "$"
 	crt.screen.Send "svn st -q" & chr(13)
 	receive = crt.Screen.ReadString("$", 60)
