@@ -1,6 +1,6 @@
 # $language = "VBScript"
 # $interface = "1.0"
-' Version		1.4
+' Version		1.5
 ' Auther		wangyw@tcl.com
 ' Date			2016/05/16
 
