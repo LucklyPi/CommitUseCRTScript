@@ -1,11 +1,13 @@
 # $language = "VBScript"
 # $interface = "1.0"
-' Version		1.5
+' Version		1.6
 ' Auther		wangyw@tcl.com
 ' Date			2016/05/16
 
 Set objFSO = CreateObject("Scripting.FileSystemObject")
 Dim TortoiseSVNPath		'TortoiseSVN安装目录  
+Dim WWorkPathGroup
+Dim LWorkPathGroup
 Dim WWorkPath    
 Dim LWorkPath
 
@@ -97,10 +99,9 @@ Function getConfig()
 	End If
 	
 	TortoiseSVNPath = FormatPath(GetConfigValue(configFilePath, "system", "TortoiseSVNPath"), "win")
-	WWorkPath       = FormatPath(GetConfigValue(configFilePath, "system", "WsitaWorkPath"), "win")
-	LWorkPath	    = FormatPath(GetConfigValue(configFilePath, "system", "LsitaWorkPath"), "linux")
-	If TortoiseSVNPath = "" Or WWorkPath = "" Or LWorkPath = "" Then
-		MsgBox "system config ERROR"
+	WWorkPathGroup = MySplit(GetConfigValue(configFilePath, "system", "WsitaWorkPath"), ";") 
+	LWorkPathGroup = MySplit(GetConfigValue(configFilePath, "system", "LsitaWorkPath"), ";")
+	If TortoiseSVNPath = "" Or UBound(WWorkPathGroup) = 0 Or UBound(LWorkPathGroup) = 0 Or UBound(LWorkPathGroup) <> UBound(WWorkPathGroup) Then
 		getConfig = 0
 		Exit Function
 	End If
@@ -222,30 +223,38 @@ End Function
 Function UpdateWorkPath()
 	crt.screen.Send "echo $HOME" & chr(13)
 	homePath = split(crt.Screen.ReadString("$ ", 60), vbCrLf)(1)
-	AbsoluteLWorkPath = Replace(LWorkPath, "~", homePath)
 	
 	crt.screen.Send "pwd" & chr(13)
 	currentPath = split(crt.Screen.ReadString("$ ", 60), vbCrLf)(1) & "/"
 	
-	If InStr(currentPath, AbsoluteLWorkPath) <> 0 Then
-		exPath = Mid(currentPath, Len(AbsoluteLWorkPath)+1, Len(currentPath) - Len(AbsoluteLWorkPath))
-		WWorkPath = WWorkPath & Replace(exPath, "/", "\")
-		LWorkPath = currentPath
-	Else
-		crt.screen.Send "cd " & LWorkPath & chr(13)
-		crt.screen.WaitForString  "$ "
-	End If
+	For i = 0 to UBound(WWorkPathGroup)-1
+		If LWorkPathGroup(i) <> "" Then 
+			absoluteLWorkPath = Replace(LWorkPathGroup(i), "~", homePath)
+			If Left(currentPath, Len(absoluteLWorkPath)) = absoluteLWorkPath Then
+				exPath = Mid(currentPath, Len(absoluteLWorkPath)+1, Len(currentPath) - Len(absoluteLWorkPath))
+				WWorkPath = WWorkPathGroup(i) & Replace(exPath, "/", "\")
+				LWorkPath = currentPath
+				UpdateWorkPath = 1
+				Exit Function
+			End If
+		End If
+	Next
+	UpdateWorkPath = 0
 End Function
 
 
 Sub Main
 	If getConfig() = 0 Then
+		MsgBox "System Config ERROR"
 		Exit Sub
 	End If
 	crt.screen.IgnoreEscape = False
-	UpdateWorkPath()
+	If UpdateWorkPath() = 0 Then
+		MsgBox "Not Under Any Work Path"
+		Exit Sub
+	End If
 	crt.screen.Send "svn st -q" & chr(13)
-	receive = crt.Screen.ReadString("$ ", 60)
+	receive = crt.Screen.ReadString("$ ", 180)
 	
 	Dim commitFileList
 	Dim cmd
