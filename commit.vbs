@@ -2,7 +2,7 @@
 # $interface = "1.0"
 ' Version		1.6
 ' Auther		wangyw@tcl.com
-' Date			2016/05/16
+' Date			2016/05/18
 
 Set objFSO = CreateObject("Scripting.FileSystemObject")
 Dim TortoiseSVNPath		'TortoiseSVN安装目录  
@@ -105,6 +105,10 @@ Function getConfig()
 		getConfig = 0
 		Exit Function
 	End If
+	For i = 0 to UBound(WWorkPathGroup)-1
+			WWorkPathGroup(i) = FormatPath(WWorkPathGroup(i), "win")
+			LWorkPathGroup(i) = FormatPath(LWorkPathGroup(i), "linux")
+	Next
 	
 	CommitFileType = MySplit(GetConfigValue(configFilePath, "commit", "CommitFileType"), ";") 
 	NotCommitFile = MySplit(GetConfigValue(configFilePath, "commit", "NotCommitFile"), ";")
@@ -268,7 +272,8 @@ Sub Main
 		cmd = cmd & """"
 		cmd = cmd & " /command:commit /path:" &commitFileList
 		cmd = cmd & " /closeonend"
-		set a=createobject("wscript.shell")
+		set a = createobject("wscript.shell")
 		a.run cmd
+		set a = Nothing
 	End IF
 End Sub
