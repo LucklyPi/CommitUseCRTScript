@@ -140,11 +140,17 @@ Function CheckFile(winFileName, fileStatus)
 		typeCheck = 0
 		timeCheck = 0
 	End If
+	If Left(fileStatus, 1) = "A" Then
+		'add file
+		typeCheck = 0
+		timeCheck = 0
+		blackCheck = 0
+	End If
 	
 	'begin file check
 	'file exist check
 	If existCheck <> 0 Then
-		isExists = objFSO.fileExists(winFileName)
+		isExists = objFSO.fileExists(winFileName) Or objFSO.FolderExists(winFileName)
 		If NOT isExists Then
 			CheckFile = 0
 			Exit Function
@@ -154,14 +160,22 @@ Function CheckFile(winFileName, fileStatus)
 	'file type check
 	If typeCheck <> 0 Then
 		pass = 0
+		
 		tmp = split(winFileName, ".")
-		fileType = "." & tmp(UBound(tmp))
+		If UBound(tmp) <> 0 Then
+			fileType = "." & tmp(UBound(tmp))
+		Else
+			tmp = split(winFileName, "\")
+			fileType = tmp(UBound(tmp))
+		End If
+		
 		For i = 0 To UBound(CommitFileType)
 			If fileType = CommitFileType(i) Then
 				pass = 1
 				Exit For
 			End If
 		Next
+
 		If pass <> 1 Then
 			CheckFile = 0
 			Exit Function
