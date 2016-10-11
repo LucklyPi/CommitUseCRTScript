@@ -161,13 +161,15 @@ Function CheckFile(winFileName, fileStatus)
 	If typeCheck <> 0 Then
 		pass = 0
 		
-		tmp = split(winFileName, ".")
+		tmp = split(winFileName, "\")
+		filename = tmp(UBound(tmp))
+		tmp = split(filename, ".")
 		If UBound(tmp) <> 0 Then
 			fileType = "." & tmp(UBound(tmp))
 		Else
-			tmp = split(winFileName, "\")
-			fileType = tmp(UBound(tmp))
+			fileType = filename
 		End If
+		
 		
 		For i = 0 To UBound(CommitFileType)
 			If fileType = CommitFileType(i) Then
@@ -181,6 +183,8 @@ Function CheckFile(winFileName, fileStatus)
 			Exit Function
 		End If
 	End if
+	
+	
 	
 	If blackCheck <> 0 Then
 		For i = 0 To UBound(NotCommitFile)
