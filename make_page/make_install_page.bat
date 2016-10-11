@@ -11,6 +11,6 @@ COPY ..\config.ini ".\commitaid\config_update.ini"
 
 COPY ..\tools\install.vbs ".\commitaid\tools"
 
-rar a -sfx ".\commitaid_2_0.exe" ".\commitaid"
-rar c -zinstall_page_config.ini ".\commitaid_2_0.exe"
+rar a -sfx ".\commitaid_2_1.exe" ".\commitaid"
+rar c -zinstall_page_config.ini ".\commitaid_2_1.exe"
 RD /S /Q "commitaid"
